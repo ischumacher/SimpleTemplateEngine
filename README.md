@@ -31,7 +31,15 @@ And then inside your html pages you have:
 
 ```html
 <body>
-  $.{"include":"/template/header.html", "context": {"page":{"number":737, "title":"Quantum-Entangled Hyperflux Modulation in Bioadaptive Nanoplasmonic Metamaterials for Transdimensional Neurocryptographic Applications"}}}
+$.{
+  "include":"/template/header.html",
+  "context": {
+    "page": {
+      "number": 737,
+  		"title": "Quantum-Entangled Hyperflux Modulation in Bioadaptive Nanoplasmonic Metamaterials for Transdimensional Neurocryptographic Applications"
+  	}
+  }
+}
 <p>I hope you enjoyed the simplified introduction, because now things start to get complicated. ...</p>
 ...
 </body>

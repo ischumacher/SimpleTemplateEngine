@@ -1,43 +1,41 @@
 # SimpleTemplateEngine
 
-A tiny, file-based JSON-driven template engine in Kotlin that favors simplicity, predictability and small footprint over a full templating DSL.
+A tiny, file-based JSON-driven template engine in Kotlin that favors simplicity.
 
 ## Overview
 
 SimpleTemplateEngine renders text templates from the filesystem and supports:
 - Direct variable substitution using JSON-backed contexts (e.g. `$.title`, `$.user.name`, `$.items[0]`).
+- Can easily and directly pass data to included templates
 - Embedded JSON include wrappers to include and render other templates with their own evaluated context:
-  - Include marker: `$.{ ... }` (a JSON object with an `include` key, optional `context`).
+  - Include marker: `$.{"include": *template name*, "context": *arbitrary JSON object* }` (a JSON object with an `include` key, optional `context`).
   - Example: `$.{"include":"templates/header.html","context":{"title":"$.pageTitle"}}`
 - Reuses a standard JSON parser (`org.json.*`) instead of implementing a custom expression language.
 - Lightweight API: a single entry point `render(templatePath, context)` returns a fully rendered `String`.
+- Templates can include templates and so on.
 
-## Key features
+## Motivation
+I just wanted a simple include mechanism that allowed me to pass data to templates to customize the output.
+I didn't really see anything that did this in a way I liked so here we are.
 
-- JSON-driven include wrappers: include other templates and pass evaluated contexts (literal values or `$.` references).
-- Direct variable references: no braces required for variables; use `$.<path>` syntax.
-- Context evaluation: include wrappers may contain nested objects/arrays where `$.` references are resolved against the parent context.
-- Include cycle detection: includes that would form cycles throw an `IncludeCycleException`.
-- Non-fatal warnings: malformed includes, missing variables, and other non-fatal issues are collected and printed to `stderr` for visibility.
-- Minimal API surface: easy to audit, test, and embed into existing Kotlin/Java codebases.
+Imagine you have simple header. You want to be able to change it in a single location and have it updated on all your pages.
+You also want it to be slightly customized per page. Say it's something like:
 
-## When to use
+```html
+<header>
+  <h3>You are currently on page $.page.number of article $.page.title </h3>
+</header>
+```
 
-- For server-side rendering of small HTML fragments, emails, or simple pages where determinism and transparency are preferred.
-- When include contexts are naturally expressed as JSON or assembled programmatically.
-- When you want a tiny dependable renderer without advanced templating features.
+And then inside your html pages you have:
 
-## Limitations
-
-- Not a full templating language — no control flow, filters or advanced formatting.
-- Substitution is textual: JSON values are converted to strings when interpolated.
-- Includes require valid JSON for the include wrapper; malformed JSON will produce a warning and skip further include processing in that file.
-- Intended for controlled server-side rendering; do not use for untrusted template content without additional sanitization.
-
-## Usage
-
-1. Add `org.json` dependency to your project (Maven/Gradle).
-2. Instantiate the engine with the templates root directory and call `render`.
+```html
+<body>
+  $.{"include":"/template/header.html", "context": {"page":{"number":737, "title":"Quantum-Entangled Hyperflux Modulation in Bioadaptive Nanoplasmonic Metamaterials for Transdimensional Neurocryptographic Applications"}}}
+<p>I hope you enjoyed the simplified introduction, because now things start to get complicated. ...</p>
+...
+</body>
+```
 
 Kotlin example:
 ```kotlin
@@ -47,8 +45,13 @@ import org.json.JSONObject
 val root = File("src/main/resources/templates")
 val engine = SimpleTemplateEngine(root)
 
-val ctx = JSONObject().put("pageTitle", "Welcome").put("user",
-    JSONObject().put("name", "Alice"))
+val ctx = JSONObject("""
+{
+  "pageTitle": "Welcome",
+  "user": "Alice"
+}
+""")
 
 val output = engine.render("index.html", ctx)
 println(output)
+```
